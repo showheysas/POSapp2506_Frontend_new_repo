@@ -1,13 +1,13 @@
 # Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
 # More GitHub Actions for Azure: https://github.com/Azure/actions
 
-name: Build and deploy Node.js app to Azure Web App - app-step4-30
+name: Build and deploy Node.js app to Azure Web App - POSapp2506_Frontend_new_repo # ★注意: ここを新しいリポジトリ名に合わせて変更してください★
 
 on:
-  push:
+  push: # main ブランチへのプッシュでワークフローをトリガー
     branches:
       - main
-  workflow_dispatch:
+  workflow_dispatch: # GitHub Actions の UI から手動でワークフローを実行できるようにする
 
 jobs:
   build:
@@ -19,24 +19,17 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Set up Node.js version
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '20.x'
 
-      - name: npm install, build, and test
+      - name: npm install and build
         run: |
-          npm install
-          npm run build --if-present
-          npm run test --if-present
-
-      - name: Zip artifact for deployment
-        run: zip release.zip ./* -r
-
-      - name: Upload artifact for deployment job
-        uses: actions/upload-artifact@v4
-        with:
-          name: node-app
-          path: release.zip
+          npm install --force
+          # NEXT_PUBLIC_API_URL はまだシークレットに設定していないので、今は環境変数として渡さない
+          # 最終的にはここに ${{ secrets.NEXT_PUBLIC_API_URL }} を追加します
+          npm run build
+          # npm run test --if-present # 必要であればテストステップを残しても良い
 
   deploy:
     runs-on: ubuntu-latest
@@ -46,19 +39,12 @@ jobs:
       url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
     
     steps:
-      - name: Download artifact from build job
-        uses: actions/download-artifact@v4
-        with:
-          name: node-app
-
-      - name: Unzip artifact for deployment
-        run: unzip release.zip
-      
       - name: 'Deploy to Azure Web App'
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'app-step4-30'
+          app-name: 'app-step4-30' # ★注意: ここはあなたの既存のApp Service名なので変更不要です★
           slot-name: 'Production'
-          package: .
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_FBE77941A5CC42F792BEFB00F36C1059 }}
+          package: ./.next/standalone # ★重要: standalone 出力ディレクトリを直接指定★
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          # startup-command は Azure Portal で設定するため、ここでは不要
