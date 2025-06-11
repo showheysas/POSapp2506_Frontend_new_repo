@@ -58,4 +58,4 @@ jobs:
         app-name: 'app-step4-30'
         slot-name: 'Production'
         publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-        package: nextjs-standalone-output
+        package: nextjs-standalone-output/standalone
