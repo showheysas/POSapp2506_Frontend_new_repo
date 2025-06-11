@@ -32,11 +32,11 @@ jobs:
     - name: Check build output
       run: ls -R .next
 
-    - name: Upload production-ready assets
+    - name: Upload standalone output
       uses: actions/upload-artifact@v4
       with:
         name: nextjs-standalone-output
-        path: .next/standalone # ← next.config.js の output: 'standalone' が前提
+        path: .next/standalone
 
   deploy:
     needs: build
