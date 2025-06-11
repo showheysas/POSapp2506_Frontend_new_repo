@@ -1,35 +1,43 @@
+# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
+# More GitHub Actions for Azure: https://github.com/Azure/actions
+
 name: Deploy Next.js to Azure Web App
 
 on:
   push:
     branches:
       - main
+  workflow_dispatch: # 手動実行を可能にするため追加 (もしなければ)
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read #This is required for actions/checkout
+
     steps:
     - uses: actions/checkout@v4
 
     - name: Use Node.js
-      uses: actions/setup-node@v4  # <-- ここを修正: コロンをスラッシュに
+      uses: actions/setup-node@v4
       with:
         node-version: '20.x'
 
     - name: Install dependencies
       run: npm install --force
 
+    # npm cache clean --force は不要な場合が多いため削除しても良いですが、残しても問題ありません
     - name: Clean npm cache
       run: npm cache clean --force
 
     - name: Build Next.js app
       run: NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }} npm run build
 
-    - name: Upload production-ready assets
+    - name: Upload production-ready assets # .next/standalone ディレクトリ全体をアーティファクトとしてアップロード
       uses: actions/upload-artifact@v4
       with:
         name: nextjs-standalone-output
-        path: ./.next/standalone
+        path: ./.next/standalone # ★ここを修正なしで維持★: ディレクトリパスをそのまま指定
 
   deploy:
     needs: build
@@ -39,16 +47,18 @@ jobs:
       url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
 
     steps:
-    - name: Download artifact from build job
+    - name: Download artifact from build job # アーティファクトをダウンロード。この時点では「nextjs-standalone-output」というフォルダに展開される
       uses: actions/download-artifact@v4
       with:
         name: nextjs-standalone-output
+        # path: . # ★ここは設定しない★: デフォルトのダウンロードパスでOK
 
-    - name: 'Deploy to Azure Web App'
+    - name: 'Deploy to Azure Web App' # ダウンロードされたフォルダの中身をデプロイ
       id: deploy-to-webapp
       uses: azure/webapps-deploy@v3
       with:
         app-name: 'app-step4-30'
         slot-name: 'Production'
         publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-        package: .
+        # ★ここを修正★: ダウンロードされたアーティファクトのルートディレクトリを指定
+        package: nextjs-standalone-output # artifactのnameがそのままフォルダ名になる
